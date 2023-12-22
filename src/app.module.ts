@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { EventsModule } from './events/events.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Event } from './events/event.entity';
+import { AppIranService } from './appIran.service';
+import { AppAlaa } from './app.alaa';
 
 @Module({
   imports: [
@@ -20,6 +22,21 @@ import { Event } from './events/event.entity';
     EventsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    {
+      provide: AppService,
+      useClass: AppService,
+    },
+    {
+      provide: 'Alaa Majed 🤍',
+      useValue: 'I love Alaa 💕',
+    },
+    {
+      provide: 'MESSAGE',
+      inject: [AppAlaa],
+      useFactory: (app) => `${app.Alaa()} Factory!`,
+    },
+    AppAlaa,
+  ],
 })
 export class AppModule {}
