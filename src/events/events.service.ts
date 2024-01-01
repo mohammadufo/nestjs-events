@@ -1,7 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-import { Like, MoreThan, Repository } from 'typeorm';
+import { DeleteResult, Like, MoreThan, Repository } from 'typeorm';
 import { Event } from './event.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Attendee, AttendeeAnswerEnum } from 'src/attendee.entitiy';
@@ -10,6 +15,7 @@ import {
   WhenEventFilterEnum,
 } from './dto/list-events-filter.dto';
 import { PaginateOptions, paginate } from 'src/utils/paginator';
+import { User } from 'src/auth/user.entity';
 
 @Injectable()
 export class EventsService {
@@ -20,10 +26,20 @@ export class EventsService {
 
   private readonly logger = new Logger(EventsService.name);
 
-  create(createEventDto: CreateEventDto) {
-    const event = this.repo.create(createEventDto);
+  async create(createEventDto: CreateEventDto, user: User): Promise<Event> {
+    //! have ugly error!
+    // return this.repo.save({
+    //   ...createEventDto,
+    //   organizer: user,
+    //   when: new Date(createEventDto.when),
+    // });
 
-    return this.repo.save(event);
+    const event = this.repo.create(createEventDto);
+    event.organizer = user;
+
+    await this.repo.save(event);
+
+    return event;
   }
 
   findAll() {
@@ -138,6 +154,14 @@ export class EventsService {
 
     this.logger.debug(query.getSql());
 
+    //* with relations!
+    // return this.repo.findOne({
+    //   where: { id },
+    //   relations: {
+    //     organizer: true,
+    //   },
+    // });
+
     return await query.getOne();
   }
 
@@ -187,21 +211,45 @@ export class EventsService {
     return event;
   }
 
-  async update(id: string, updateEventDto: UpdateEventDto) {
+  async update(id: string, updateEventDto: UpdateEventDto, user: User) {
     const event = await this.repo.findOne({ where: { id } });
 
     if (!event) throw new NotFoundException('event not exist with this id!');
+
+    if (event.organizerId !== user.id) {
+      throw new ForbiddenException('You can change only your event!');
+    }
 
     Object.assign(event, updateEventDto);
 
     return this.repo.save(event);
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: User) {
     const event = await this.repo.findOne({
       where: { id },
     });
 
+    if (event.organizerId !== user.id) {
+      throw new ForbiddenException('You can change only your event!');
+    }
+
     return this.repo.remove(event);
+  }
+
+  public async deleteEvent(id: number, user: User): Promise<DeleteResult> {
+    const event = await this.repo.findOne({
+      where: { id: id.toString() },
+    });
+
+    if (event.organizerId !== user.id) {
+      throw new ForbiddenException('You can change only your event!');
+    }
+
+    return await this.repo
+      .createQueryBuilder('e')
+      .delete()
+      .where('id = :id', { id })
+      .execute();
   }
 }

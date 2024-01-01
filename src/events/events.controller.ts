@@ -11,21 +11,30 @@ import {
   Query,
   UsePipes,
   ValidationPipe,
+  ParseIntPipe,
+  NotFoundException,
+  UseGuards,
+  SerializeOptions,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { WhenEventFilterDto } from './dto/list-events-filter.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { User } from 'src/auth/user.entity';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('events')
+@SerializeOptions({ strategy: 'excludeAll' })
 export class EventsController {
   private readonly logger = new Logger(EventsController.name);
 
   constructor(private readonly eventsService: EventsService) {}
 
   @Post()
-  create(@Body() createEventDto: CreateEventDto) {
-    return this.eventsService.create(createEventDto);
+  @UseGuards(AuthGuard('jwt'))
+  create(@Body() createEventDto: CreateEventDto, @CurrentUser() user: User) {
+    return this.eventsService.create(createEventDto, user);
   }
 
   @Get()
@@ -63,13 +72,26 @@ export class EventsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
-    return this.eventsService.update(id, updateEventDto);
+  @UseGuards(AuthGuard('jwt'))
+  update(
+    @Param('id') id: string,
+    @Body() updateEventDto: UpdateEventDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.eventsService.update(id, updateEventDto, user);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
   @HttpCode(204)
-  remove(@Param('id') id: string) {
-    return this.eventsService.remove(id);
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: User,
+  ) {
+    const result = await this.eventsService.deleteEvent(id, user);
+
+    if (result.affected !== 1) {
+      throw new NotFoundException();
+    }
   }
 }
