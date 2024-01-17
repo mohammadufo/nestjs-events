@@ -1,5 +1,6 @@
-import { Attendee } from 'src/attendee.entitiy';
+import { Attendee } from 'src/events/attendee.entitiy';
 import { User } from 'src/auth/user.entity';
+import { PaginationResult } from 'src/utils/paginator';
 import {
   Column,
   Entity,
@@ -46,3 +47,5 @@ export class Event {
   attendeeMaybe?: number;
   attendeeAccepted?: number;
 }
+
+export type PaginatedEvent = PaginationResult<Event>;

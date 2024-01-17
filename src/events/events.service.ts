@@ -7,9 +7,9 @@ import {
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { DeleteResult, Like, MoreThan, Repository } from 'typeorm';
-import { Event } from './event.entity';
+import { Event, PaginatedEvent } from './event.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Attendee, AttendeeAnswerEnum } from 'src/attendee.entitiy';
+import { Attendee, AttendeeAnswerEnum } from 'src/events/attendee.entitiy';
 import {
   WhenEventFilterDto,
   WhenEventFilterEnum,
@@ -251,5 +251,21 @@ export class EventsService {
       .delete()
       .where('id = :id', { id })
       .execute();
+  }
+
+  public async getEventsOrganizedByUserIdQueryPaginated(
+    userId: number,
+    PaginateOptions: PaginateOptions,
+  ): Promise<PaginatedEvent> {
+    return await paginate<Event>(
+      this.getEventsOrganizedByUserIdQuery(userId),
+      PaginateOptions,
+    );
+  }
+
+  private getEventsOrganizedByUserIdQuery(userId: number) {
+    return this.getEventBaseQuery().where('e.organizerId = :userId', {
+      userId,
+    });
   }
 }

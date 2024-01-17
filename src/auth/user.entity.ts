@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Profile } from './profile.entity';
 import { Event } from 'src/events/event.entity';
+import { Attendee } from 'src/events/attendee.entitiy';
 
 @Entity()
 export class User {
@@ -35,4 +36,7 @@ export class User {
 
   @OneToMany(() => Event, (event) => event.organizer)
   organized: Event[];
+
+  @OneToMany(() => Attendee, (attendee) => attendee.user)
+  attended: Attendee[];
 }

@@ -1,6 +1,6 @@
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { Attendee } from 'src/attendee.entitiy';
+import { Attendee } from 'src/events/attendee.entitiy';
 import { Event } from 'src/events/event.entity';
 
 export default registerAs(

@@ -15,6 +15,8 @@ import {
   NotFoundException,
   UseGuards,
   SerializeOptions,
+  UseInterceptors,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -67,6 +69,7 @@ export class EventsController {
   }
 
   @Get(':id')
+  @UseInterceptors(ClassSerializerInterceptor)
   findOne(@Param('id') id: string) {
     return this.eventsService.getEvent(id);
   }
